@@ -1,0 +1,278 @@
+{% comment %}
+  Duration Selector
+  -----------------
+  - Default: ATC aktiv me "Ajouter au panier | 35€", asnjë kartë e zgjedhur
+  - Klik kartë: ndryshon çmimin në ATC + aktivo kartën
+  - Klik ATC: shton variantin e zgjedhur (ose default nëse nuk ka zgjedhur)
+
+  KONFIGURO:
+  Zëvendëso VARIANT_ID_1_MUAJ dhe VARIANT_ID_2_MUAJ me ID-të reale nga Shopify Admin
+{% endcomment %}
+
+{% assign variant_1_id = '43067311161407' %}
+{% assign variant_2_id = '43067319320639' %}
+{% assign default_variant_id = variant_1_id %}
+
+<div class="ds-wrapper" id="DurationSelector">
+  <div class="ds-grid">
+    <button
+      type="button"
+      class="ds-card"
+      data-variant-id="{{ variant_1_id }}"
+      data-price="34,80€"
+    >
+      <span class="ds-badge ds-badge--discovery">Découverte</span>
+      <span class="ds-title">1 mois</span>
+      <span class="ds-daily">Soit 1,16€ / jour</span>
+    </button>
+
+    <button
+      type="button"
+      class="ds-card"
+      data-variant-id="{{ variant_2_id }}"
+      data-price="63,00€"
+    >
+      <span class="ds-badge ds-badge--best">Meilleure offre</span>
+      <span class="ds-title">2 mois</span>
+      <span class="ds-daily">
+        <span class="ds-discount">-10%</span>
+        Soit 1,05€ / jour
+      </span>
+    </button>
+  </div>
+
+  <button type="button" class="ds-atc" id="ds-atc-btn">Ajouter au panier &nbsp;|&nbsp; 35€</button>
+
+  <p class="ds-feedback" id="ds-feedback" aria-live="polite"></p>
+</div>
+
+<style>
+  .ds-wrapper {
+    width: 100%;
+    font-family: inherit;
+  }
+
+  .ds-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .ds-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 22px 14px 16px;
+    border: 1.5px solid #e2e2e2;
+    border-radius: 16px;
+    background: #ffffff;
+    cursor: pointer;
+    transition: border-color 0.18s ease, background 0.18s ease;
+    text-align: center;
+    min-height: 108px;
+    width: 100%;
+    font-family: inherit;
+    -webkit-appearance: none;
+    appearance: none;
+    color: inherit;
+  }
+
+  .ds-card:hover {
+    border-color: #b0b0b0;
+  }
+
+  .ds-card.is-active {
+    border-color: #1a1a1a;
+    background: #eaf4f1;
+  }
+
+  .ds-badge {
+    position: absolute;
+    top: -11px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  .ds-badge--discovery {
+    background: #ddeef7;
+    color: #1e5a78;
+    border: 1px solid #bcd8ec;
+  }
+  .ds-badge--best {
+    background: #f3f3f3;
+    color: #1a1a1a;
+    border: 1px solid #ddd;
+  }
+
+  .ds-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a1a1a;
+    line-height: 1.2;
+    margin-top: 2px;
+  }
+  .ds-daily {
+    font-size: 13px;
+    color: #6b6b6b;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .ds-discount {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #1a1a1a;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 20px;
+  }
+
+  .ds-atc {
+    display: block;
+    width: 100%;
+    padding: 16px 24px;
+    border-radius: 50px;
+    border: none;
+    background: #1a1a1a;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.18s ease, transform 0.1s ease;
+    text-align: center;
+  }
+
+  .ds-atc:hover {
+    background: #333;
+  }
+  .ds-atc:active {
+    transform: scale(0.98);
+  }
+  .ds-atc.is-loading {
+    opacity: 0.75;
+    pointer-events: none;
+  }
+  .ds-atc.is-success {
+    background: #1d9e75;
+  }
+
+  .ds-feedback {
+    font-size: 13px;
+    color: #1d9e75;
+    text-align: center;
+    margin-top: 8px;
+    min-height: 18px;
+  }
+  .ds-feedback.is-error {
+    color: #c0392b;
+  }
+
+  @media (max-width: 480px) {
+    .ds-card {
+      padding: 20px 10px 14px;
+    }
+    .ds-title {
+      font-size: 19px;
+    }
+    .ds-atc {
+      font-size: 15px;
+      padding: 14px 20px;
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    var wrapper = document.getElementById('DurationSelector');
+    if (!wrapper) return;
+
+    var cards = wrapper.querySelectorAll('.ds-card');
+    var atcBtn = document.getElementById('ds-atc-btn');
+    var feedback = document.getElementById('ds-feedback');
+    var selectedId = '{{ default_variant_id }}'; // default = varianti 1 muaj
+
+    // Klik kartë → aktivo + ndrysho çmimin në ATC
+    cards.forEach(function (card) {
+      card.addEventListener('click', function () {
+        cards.forEach(function (c) {
+          c.classList.remove('is-active');
+        });
+        card.classList.add('is-active');
+
+        selectedId = card.getAttribute('data-variant-id');
+        var price = card.getAttribute('data-price');
+
+        atcBtn.innerHTML = 'Ajouter au panier &nbsp;|&nbsp; ' + price;
+        atcBtn.classList.remove('is-success');
+        feedback.textContent = '';
+        feedback.classList.remove('is-error');
+      });
+    });
+
+    // Klik ATC → shto në cart
+    atcBtn.addEventListener('click', function () {
+      if (atcBtn.classList.contains('is-loading')) return;
+
+      atcBtn.classList.add('is-loading');
+      atcBtn.textContent = 'Ajout en cours...';
+      feedback.textContent = '';
+      feedback.classList.remove('is-error');
+
+      fetch('/cart/add.js', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: selectedId, quantity: 1 }),
+      })
+        .then(function (res) {
+          if (!res.ok) throw new Error('error');
+          return res.json();
+        })
+        .then(function () {
+          atcBtn.classList.remove('is-loading');
+          atcBtn.classList.add('is-success');
+          atcBtn.innerHTML = '✓ Ajouté au panier !';
+
+          // Rifresko cart count
+          fetch('/cart.js')
+            .then(function (r) {
+              return r.json();
+            })
+            .then(function (cart) {
+              var bubble = document.querySelector('.cart-count-bubble span:not(.visually-hidden)');
+              if (bubble) bubble.textContent = cart.item_count;
+
+              var cartDrawer = document.querySelector('cart-drawer');
+              if (cartDrawer) {
+                document.dispatchEvent(new CustomEvent('cart:open', { bubbles: true }));
+              } else {
+                setTimeout(function () {
+                  window.location.href = '/cart';
+                }, 1500);
+              }
+            });
+        })
+        .catch(function () {
+          atcBtn.classList.remove('is-loading');
+          var activeCard = wrapper.querySelector('.ds-card.is-active');
+          var price = activeCard ? activeCard.getAttribute('data-price') : '35€';
+          atcBtn.innerHTML = 'Ajouter au panier &nbsp;|&nbsp; ' + price;
+          feedback.textContent = 'Erreur. Veuillez réessayer.';
+          feedback.classList.add('is-error');
+        });
+    });
+  })();
+</script>
