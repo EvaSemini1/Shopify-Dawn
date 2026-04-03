@@ -1,10 +1,102 @@
 {% comment %}
-  Renders product variant-picker
+  {% comment %}
+    Renders product variant-picker
 
-  Accepts:
-  - product: {Object} product object.
-  - block: {Object} passing the block information.
-  - product_form_id: {String} Id of the product form to which the variant picker is associated.
+    Accepts:
+    - product: {Object} product object.
+    - block: {Object} passing the block information.
+    - product_form_id: {String} Id of the product form to which the variant picker is associated.
+    Usage:
+    {% render 'product-variant-picker', product: product, block: block, product_form_id: product_form_id %}
+  {% endcomment %}
+  {%- unless product.has_only_default_variant -%}
+    <variant-selects
+      id="variant-selects-{{ section.id }}"
+      data-section="{{ section.id }}"
+      {{ block.shopify_attributes }}
+    >
+      {%- for option in product.options_with_values -%}
+        {%- liquid
+          assign swatch_count = option.values | map: 'swatch' | compact | size
+          assign picker_type = block.settings.picker_type
+
+          if swatch_count > 0 and block.settings.swatch_shape != 'none'
+            if block.settings.picker_type == 'dropdown'
+              assign picker_type = 'swatch_dropdown'
+            else
+              assign picker_type = 'swatch'
+            endif
+          endif
+        -%}
+        {%- if picker_type == 'swatch' -%}
+          <fieldset class="js product-form__input product-form__input--swatch">
+            <legend class="form__label">
+              {{ option.name }}:
+              <span data-selected-value>
+                {{- option.selected_value -}}
+              </span>
+            </legend>
+            {% render 'product-variant-options',
+              product: product,
+              option: option,
+              block: block,
+              picker_type: picker_type
+            %}
+          </fieldset>
+        {%- elsif picker_type == 'button' -%}
+          <fieldset class="js product-form__input product-form__input--pill">
+            <legend class="form__label">{{ option.name }}</legend>
+            {% render 'product-variant-options',
+              product: product,
+              option: option,
+              block: block,
+              picker_type: picker_type
+            %}
+          </fieldset>
+        {%- else -%}
+          <div class="product-form__input product-form__input--dropdown">
+            <label class="form__label" for="Option-{{ section.id }}-{{ forloop.index0 }}">
+              {{ option.name }}
+            </label>
+            <div class="select">
+              {%- if picker_type == 'swatch_dropdown' -%}
+                <span
+                  data-selected-value
+                  class="dropdown-swatch"
+                >
+                  {% render 'swatch', swatch: option.selected_value.swatch, shape: block.settings.swatch_shape %}
+                </span>
+              {%- endif -%}
+              <select
+                id="Option-{{ section.id }}-{{ forloop.index0 }}"
+                class="select__select"
+                name="options[{{ option.name | escape }}]"
+                form="{{ product_form_id }}"
+              >
+                {% render 'product-variant-options',
+                  product: product,
+                  option: option,
+                  block: block,
+                  picker_type: picker_type
+                %}
+              </select>
+              <span class="svg-wrapper">
+                {{- 'icon-caret.svg' | inline_asset_content -}}
+              </span>
+            </div>
+          </div>
+        {%- endif -%}
+      {%- endfor -%}
+
+      <script type="application/json" data-selected-variant>
+        {{ product.selected_or_first_available_variant | json }}
+      </script>
+    </variant-selects>
+  {%- endunless -%}
+{% endcomment %}
+
+{% comment %}
+  Renders product variant-picker
   Usage:
   {% render 'product-variant-picker', product: product, block: block, product_form_id: product_form_id %}
 {% endcomment %}
@@ -42,16 +134,60 @@
             picker_type: picker_type
           %}
         </fieldset>
+
       {%- elsif picker_type == 'button' -%}
-        <fieldset class="js product-form__input product-form__input--pill">
-          <legend class="form__label">{{ option.name }}</legend>
-          {% render 'product-variant-options',
-            product: product,
-            option: option,
-            block: block,
-            picker_type: picker_type
-          %}
+        {%- assign variant_1month = null -%}
+        {%- assign variant_2month = null -%}
+        {%- for variant in product.variants -%}
+          {%- if variant.option1 == '1 Month' and variant_1month == null -%}
+            {%- assign variant_1month = variant -%}
+          {%- elsif variant.option1 == '2 Month' and variant_2month == null -%}
+            {%- assign variant_2month = variant -%}
+          {%- endif -%}
+        {%- endfor -%}
+
+        {%- assign price_1_daily = variant_1month.price | divided_by: 30 -%}
+        {%- assign price_2_daily = variant_2month.price | divided_by: 60 -%}
+
+        <fieldset class="js product-form__input product-form__input--pill ds-fieldset">
+          <span data-selected-value style="display:none;">{{ option.selected_value }}</span>
+
+          <div class="ds-grid">
+            {%- for value in option.values -%}
+              <label
+                class="ds-card{% if option.selected_value == value %} is-active{% endif %}"
+                for="ds-option-{{ section.id }}-{{ forloop.index }}"
+              >
+                <input
+                  type="radio"
+                  id="ds-option-{{ section.id }}-{{ forloop.index }}"
+                  name="options[{{ option.name | escape }}]"
+                  value="{{ value | escape }}"
+                  form="{{ product_form_id }}"
+                  class="ds-radio"
+                  data-option-value-id="{{ value.id }}"
+                  {% if option.selected_value == value %}
+                    checked
+                  {% endif %}
+                >
+
+                {%- if value == '1 Month' -%}
+                  <span class="ds-badge ds-badge--discovery">Découverte</span>
+                  <span class="ds-title">1 mois</span>
+                  <span class="ds-daily">Soit {{ price_1_daily | money }} / jour</span>
+                {%- else -%}
+                  <span class="ds-badge ds-badge--best">Meilleure offre</span>
+                  <span class="ds-title">2 mois</span>
+                  <span class="ds-daily">
+                    <span class="ds-discount">-10%</span>
+                    Soit {{ price_2_daily | money }} / jour
+                  </span>
+                {%- endif -%}
+              </label>
+            {%- endfor -%}
+          </div>
         </fieldset>
+
       {%- else -%}
         <div class="product-form__input product-form__input--dropdown">
           <label class="form__label" for="Option-{{ section.id }}-{{ forloop.index0 }}">
@@ -59,10 +195,7 @@
           </label>
           <div class="select">
             {%- if picker_type == 'swatch_dropdown' -%}
-              <span
-                data-selected-value
-                class="dropdown-swatch"
-              >
+              <span data-selected-value class="dropdown-swatch">
                 {% render 'swatch', swatch: option.selected_value.swatch, shape: block.settings.swatch_shape %}
               </span>
             {%- endif -%}
@@ -91,4 +224,149 @@
       {{ product.selected_or_first_available_variant | json }}
     </script>
   </variant-selects>
+
+  <style>
+    .ds-fieldset {
+      border: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .ds-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .ds-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 22px 14px 16px;
+      border: 1px solid #9a9a9a26;
+      border-radius: 16px;
+      background: #ffffff;
+      cursor: pointer;
+      transition: border-color 0.18s ease, background 0.18s ease;
+      text-align: center;
+      min-height: 108px;
+    }
+
+    .ds-card:hover {
+      border-color: #b0b0b0;
+    }
+
+    .ds-card.is-active {
+      background: #e2f2f3;
+      border: none;
+    }
+
+    .ds-radio {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+      pointer-events: none;
+    }
+
+    .ds-badge {
+      position: absolute;
+      top: -11px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 3px 12px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .ds-badge--discovery {
+      background: #c8e4e6;
+      color: #171714;
+    }
+    .ds-badge--best {
+      background: #f3f3f3;
+      color: #171714;
+    }
+
+    .ds-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #171714;
+      line-height: 1.2;
+      margin-top: 2px;
+    }
+    .ds-daily {
+      font-size: 13px;
+      color: #6b6b6b;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .ds-discount {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #171714;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 1px 8px;
+      border-radius: 20px;
+    }
+
+    @media (max-width: 480px) {
+      .ds-card {
+        padding: 20px 10px 14px;
+      }
+      .ds-title {
+        font-size: 19px;
+      }
+    }
+  </style>
+
+  <script>
+    (function() {
+      var selects = document.getElementById('variant-selects-{{ section.id }}');
+      if (!selects) return;
+
+      selects.addEventListener('change', function(e) {
+        if (!e.target.classList.contains('ds-radio')) return;
+
+        {% comment %} Updato is-active vizualisht {% endcomment %}
+        var grid = e.target.closest('.ds-grid');
+        if (!grid) return;
+        grid.querySelectorAll('.ds-card').forEach(function(card) {
+          card.classList.remove('is-active');
+        });
+        e.target.closest('.ds-card').classList.add('is-active');
+
+        {% comment %} Updato data-selected-value që Dawn e kërkon {% endcomment %}
+        var selectedValue = e.target.closest('.ds-fieldset').querySelector('[data-selected-value]');
+        if (selectedValue) selectedValue.textContent = e.target.value;
+      });
+
+      {% comment %}
+        Pas re-render-it të Dawn, riapliko is-active bazuar në radio të checked
+      {% endcomment %}
+      var observer = new MutationObserver(function() {
+        var checkedRadio = selects.querySelector('.ds-radio:checked');
+        if (!checkedRadio) return;
+        var grid = checkedRadio.closest('.ds-grid');
+        if (!grid) return;
+        grid.querySelectorAll('.ds-card').forEach(function(card) {
+          card.classList.remove('is-active');
+        });
+        checkedRadio.closest('.ds-card').classList.add('is-active');
+      });
+
+      observer.observe(selects, { childList: true, subtree: true });
+    })();
+  </script>
 {%- endunless -%}

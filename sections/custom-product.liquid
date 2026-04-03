@@ -229,7 +229,7 @@
                 </div>
 
               {%- when 'quantity_selector' -%}
-                {% render 'quantity-custom', product: product, section: section %}
+                {% comment %} {% render 'quantity-custom', product: product, section: section %} {% endcomment %}
                 <div
                   id="Quantity-Form-{{ section.id }}"
                   class="product-form__input product-form__quantity{% if settings.inputs_shadow_vertical_offset != 0 and settings.inputs_shadow_vertical_offset < 0 %} product-form__quantity-top{% endif %}"
@@ -691,6 +691,102 @@
                     {{ block.settings.image_2 | image_url: width: 80, height: 16 | image_tag }}
                   {% endif %}
                 </div>
+
+              {%- when 'description_custom' -%}
+                <div class="desc-custom" {{ block.shopify_attributes }}>
+                  {%- if block.settings.description != blank -%}
+                    <div class="desc-custom__text rte">
+                      {{ block.settings.description }}
+                    </div>
+                  {%- endif -%}
+
+                  <ul class="desc-custom__list">
+                    {%- if block.settings.text_1 != blank -%}
+                      <li class="desc-custom__item">
+                        {%- if block.settings.icon_1 != blank -%}
+                          <span class="desc-custom__icon">
+                            {{
+                              block.settings.icon_1
+                              | image_url: width: 24
+                              | image_tag: width: 24, height: 24, alt: ''
+                            }}
+                          </span>
+                        {%- else -%}
+                          <span class="desc-custom__check">✓</span>
+                        {%- endif -%}
+                        <span class="desc-custom__item-text">{{ block.settings.text_1 }}</span>
+                      </li>
+                    {%- endif -%}
+
+                    {%- if block.settings.text_2 != blank -%}
+                      <li class="desc-custom__item">
+                        {%- if block.settings.icon_2 != blank -%}
+                          <span class="desc-custom__icon">
+                            {{
+                              block.settings.icon_2
+                              | image_url: width: 24
+                              | image_tag: width: 24, height: 24, alt: ''
+                            }}
+                          </span>
+                        {%- else -%}
+                          <span class="desc-custom__check">✓</span>
+                        {%- endif -%}
+                        <span class="desc-custom__item-text">{{ block.settings.text_2 }}</span>
+                      </li>
+                    {%- endif -%}
+
+                    {%- if block.settings.text_3 != blank -%}
+                      <li class="desc-custom__item">
+                        {%- if block.settings.icon_3 != blank -%}
+                          <span class="desc-custom__icon">
+                            {{
+                              block.settings.icon_3
+                              | image_url: width: 24
+                              | image_tag: width: 24, height: 24, alt: ''
+                            }}
+                          </span>
+                        {%- else -%}
+                          <span class="desc-custom__check">✓</span>
+                        {%- endif -%}
+                        <span class="desc-custom__item-text">{{ block.settings.text_3 }}</span>
+                      </li>
+                    {%- endif -%}
+                  </ul>
+                </div>
+
+              {%- when 'collapsible_custom' -%}
+                <div class="collapsible-custom quick-add-hidden" {{ block.shopify_attributes }}>
+                  <details id="CollapsibleCustom-{{ block.id }}-{{ section.id }}">
+                    <summary class="collapsible-custom__summary">
+                      <span class="collapsible-custom__title">{{ block.settings.heading }}</span>
+                      <span class="collapsible-custom__chevron">
+                        {%- if block.settings.chevron_icon != blank -%}
+                          {{
+                            block.settings.chevron_icon
+                            | image_url: width: 24
+                            | image_tag: width: 24, height: 24, alt: ''
+                          }}
+                        {%- else -%}
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 20 20"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                          </svg>
+                        {%- endif -%}
+                      </span>
+                    </summary>
+                    <div class="collapsible-custom__content rte">
+                      {{ block.settings.content }}
+                      {%- if block.settings.page != blank -%}
+                        {{ block.settings.page.content }}
+                      {%- endif -%}
+                    </div>
+                  </details>
+                </div>
             {%- endcase -%}
           {%- endfor -%}
           <a href="{{ product.url }}" class="link product__view-details animate-arrow">
@@ -862,6 +958,62 @@
       ]
     },
     {
+      "type": "description_custom",
+      "name": "Description Custom",
+      "settings": [
+        {
+          "type": "richtext",
+          "id": "description",
+          "label": "Teksti i përshkrimit"
+        },
+        {
+          "type": "header",
+          "content": "Rreshti 1"
+        },
+        {
+          "type": "image_picker",
+          "id": "icon_1",
+          "label": "Ikonë 1 (opsionale)"
+        },
+        {
+          "type": "text",
+          "id": "text_1",
+          "label": "Teksti 1",
+          "default": "Lorem ipsum dolor sit amet"
+        },
+        {
+          "type": "header",
+          "content": "Rreshti 2"
+        },
+        {
+          "type": "image_picker",
+          "id": "icon_2",
+          "label": "Ikonë 2 (opsionale)"
+        },
+        {
+          "type": "text",
+          "id": "text_2",
+          "label": "Teksti 2",
+          "default": "Lorem ipsum dolor sit amet"
+        },
+        {
+          "type": "header",
+          "content": "Rreshti 3"
+        },
+        {
+          "type": "image_picker",
+          "id": "icon_3",
+          "label": "Ikonë 3 (opsionale)"
+        },
+        {
+          "type": "text",
+          "id": "text_3",
+          "label": "Teksti 3",
+          "default": "Lorem ipsum dolor sit amet"
+        }
+      ]
+    },
+    {
       "type": "inventory",
       "name": "t:sections.main-product.blocks.inventory.name",
       "limit": 1,
@@ -900,6 +1052,33 @@
           "id": "show_inventory_quantity",
           "label": "t:sections.main-product.blocks.inventory.settings.show_inventory_quantity.label",
           "default": true
+        }
+      ]
+    },
+    {
+      "type": "collapsible_custom",
+      "name": "Collapsible Custom",
+      "settings": [
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Titulli",
+          "default": "Bienfaits et Efficacité"
+        },
+        {
+          "type": "image_picker",
+          "id": "chevron_icon",
+          "label": "Ikonë Chevron (opsionale — default: shigjetë)"
+        },
+        {
+          "type": "richtext",
+          "id": "content",
+          "label": "Përmbajtja"
+        },
+        {
+          "type": "page",
+          "id": "page",
+          "label": "Ose zgjidh një faqe"
         }
       ]
     },
