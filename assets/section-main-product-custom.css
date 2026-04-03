@@ -2049,4 +2049,10 @@ details[open] .collapsible-custom__chevron {
 
 .price-custom {
     margin-left: auto;
+    margin-left: auto;
+    position: absolute;
+    right: 0;
+    top: 5.5%;
+    transform: translateY(-50%);
+    font-weight: 600;
 }
